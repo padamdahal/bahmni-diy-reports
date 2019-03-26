@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>EHR DIY Report</title>
+        <!-- external libs from cdnjs -->
+        <script type="text/javascript" src="jquery/jquery_1.11.2.min.js"></script>
+        <script type="text/javascript" src="jquery/jqueryui_1.11.4.min.js"></script>
+		<script type="text/javascript" src="plotly/plotly-basic-latest.min.js"></script>
+		<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+        
+		<script type="text/javascript" src="papaparse/papaparse.js"></script>
+
+        <!-- PivotTable.js libs -->
+        <link rel="stylesheet" type="text/css" href="pivottablejs/pivot.css">
+        <script type="text/javascript" src="pivottablejs/pivot.js"></script>
+		<script type="text/javascript" src="pivottablejs/plotly_renderers.js"></script>
+		<script type="text/javascript" src="pivottablejs/gchart_renderers.js"></script>
+		
+		<!-- pivot table configs -->
+		<script type="text/javascript" src="config/config.js"></script>
+		
+		<!-- Nepali calendar and converter -->
+		<link rel="stylesheet" type="text/css" href="jquery.calendars.package-2.1.0/css/jquery.calendars.picker.css"> 
+		<script src="jquery.calendars.package-2.1.0/js/jquery.plugin.min.js"></script>
+		<script src="jquery.calendars.package-2.1.0/js/jquery.calendars.all.js"></script>
+		<script src="jquery.calendars.package-2.1.0/js/jquery.calendars.nepali.js"></script>
+		<script src="dateConverter.js"></script>
+		<style>
+			input{
+				padding: 10px;
+				position: relative;
+			}
+			.button-link {
+				padding: 10px 15px;
+				background: #4479BA;
+				color: #FFF;
+				-webkit-border-radius: 4px;
+				-moz-border-radius: 4px;
+				border-radius: 4px;
+				border: solid 1px #20538D;
+				text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.4);
+				-webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 1px rgba(0, 0, 0, 0.2);
+				-moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 1px rgba(0, 0, 0, 0.2);
+				box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 1px rgba(0, 0, 0, 0.2);
+				-webkit-transition-duration: 0.2s;
+				-moz-transition-duration: 0.2s;
+				transition-duration: 0.2s;
+				-webkit-user-select:none;
+				-moz-user-select:none;
+				-ms-user-select:none;
+				user-select:none;
+			}
+			.button-link:hover {
+				background: #356094;
+				border: solid 1px #2A4E77;
+				text-decoration: none;
+			}
+			.button-link:active {
+				-webkit-box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
+				-moz-box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
+				box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
+				background: #2E5481;
+				border: solid 1px #203E5F;
+			}
+		</style>
+		
+		
+    </head>
+    <body style="font-family:verdana;background:#efefef">
+		<div style="margin:auto;width:90%;padding:0;">
+			<div style="border:1px solid #ccc;margin:10px;padding:10px;background:#eee">
+				<select id="reports" style="padding:10px"></select>
+				<input id="startDate" class="npDate" value="2075-01-01" autocomplete="off"/>
+				<input id="endDate" class="npDate" value="2075-12-12" autocomplete="off"/>
+				<!--a href="" id="submit" class="button-link"">Submit</a-->
+				<button id="submit" class="button-link">Submit</button>
+			</div>
+			<script type="text/javascript">
+				google.load("visualization", "1", {packages:["corechart", "charteditor"]});
+				
+				$(function(){
+					
+					// Check if user logged in to bahmni system
+					(function(){
+						var allcookies = document.cookie;
+						cookiearray = allcookies.split(';');
+						for(var i=0; i < cookiearray.length; i++) {
+							name = cookiearray[i].split('=')[0];
+							value = cookiearray[i].split('=')[1];
+							
+							if(name == ' bahmni.user'){
+								if(value === null || value === 'null'){
+									window.location.href = location.protocol+"//"+location.host+"/bahmni/home/index.html#/login?showLoginMessage&from=/diyreport";
+								}
+							}
+						}
+					})();					
+					
+					// Load the list of reports from bahmni report config
+					$.ajax({
+						url: "/bahmni_config/openmrs/apps/reports/reports.json",
+						success: function(reports){
+							var select = $("#reports");
+							select.append('<option value="">Select Obs Template</option>');
+							$.each(reports, function( key, value ) {
+								if(value.diy === 'true'){
+									select.append('<option value="' + value.name + '">' + value.name + '</option>');
+								}
+							});
+						}
+					});
+					
+					// Nepali calendar picker for date fields
+					$(".npDate").calendarsPicker({
+						calendar: $.calendars.instance('nepali'),
+						yearRange: '-10:+0',
+						duration: "fast",
+						showAnim: "fadeIn",
+						dateFormat: 'yyyy-mm-dd',
+						
+						onSelect: function(dates) {}
+					});
+					
+					// Request for data and render the pivot UI
+					$("#submit").click(function(e){
+						e.preventDefault();
+						// Display loading gif until UI loads
+						$("#output").empty();
+						$("#output").append('<div class="loading" style="text-align:center"><img src="loading.gif"/></div>');
+						
+						// Check for missing values
+						var errors = [];
+						var reportName = $("#reports").children("option:selected").val();
+						
+						if(reportName == null || reportName == '' || reportName === 'Select Obs Template'){
+							errors.push('Report name missing. ');
+						}
+						
+						var startDate = $("#startDate").val();
+						try {
+							var converter = new DateConverter();
+							converter.setNepaliDate(startDate.substring(0,4), startDate.substring(5,7), startDate.substring(8,10));
+							startDate = converter.toEnglishString('-');
+						}catch{
+							console.log('Error in start date');
+						}
+						
+						if(startDate == null || startDate === 'undefined' || startDate == ''){
+							errors.push('Start Date missing. ');
+						}
+						
+						var endDate = $("#endDate").val();
+						try {
+							var converter = new DateConverter();
+							converter.setNepaliDate(endDate.substring(0,4), endDate.substring(5,7), endDate.substring(8,10));
+							endDate = converter.toEnglishString('-');
+						}catch{
+							console.log('Error in end date');
+						}
+						
+						if(endDate == null || endDate === 'undefined' || endDate == ''){
+							errors.push('End Date missing. ');
+						}
+						
+						if (errors === undefined || errors.length == 0) {
+							var reportUrl = location.protocol+"//"+location.host+"/bahmnireports/report?name=";
+							reportUrl += reportName;
+							reportUrl += "&startDate="+ startDate;
+							reportUrl += "&endDate="+ endDate;
+							reportUrl += "&responseType=text/csv&paperSize=null&appName=reports";
+							
+							// Get the configuration
+							var pivotConfig = new Object;
+							pivotConfig = (config.hasOwnProperty(reportName))?config[reportName]:null;
+							
+							// Fetch and load the content in the pivotUI
+							Papa.parse(reportUrl, {
+								download: true,
+								skipEmptyLines: true,
+								fastMode: false,
+								complete: function(parsed){
+									// Remove 3 rows starting at first row (0) as header row is at 4th row
+									parsed.data.splice(0,3);
+									
+									var derivers = $.pivotUtilities.derivers;
+									
+									var renderers = $.extend(
+										$.pivotUtilities.renderers,
+										$.pivotUtilities.plotly_renderers,
+										$.pivotUtilities.gchart_renderers
+									);
+									console.log(pivotConfig);
+									$("#output").pivotUI(parsed.data, pivotConfig, true);
+								}
+							});
+						}else{
+							$("#output").empty();
+							$.each(errors, function(i, error) {
+								var html = '<div class="error" style="color:orange;text-align:center;margin:20px;">'+error+'</div>';
+								$("#output").append(html);
+							});
+						}
+					});
+				});
+			</script>
+
+			<div id="output" style="margin: 10px;border:1px solid #efefef;background:#fff">
+				<div style="font-size:25px;color:#999;padding:20px;margin:20px;text-align:center">Pivot UI will load here....</div>
+				<div style="font-size:15px;color:#666;padding:20px;margin:20px;text-align:center">Please select all parameters above.</div>
+			</div>
+		</div>
+    </body>
+</html>
