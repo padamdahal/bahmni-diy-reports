@@ -1,0 +1,116 @@
+{
+	"deliver_note": {
+        "name": "Delivery Note",
+		"diy":"true",
+        "type": "obsTemplate",
+        "config": {
+            "templateName": "Delivery Note"
+        }
+    },
+	"procedure_notes": {
+        "name": "Procedure Notes",
+		"diy": "true",
+        "type": "obsTemplate",
+        "config": {
+            "templateName": "Procedure Notes"
+        }
+    },
+	"death_note" : {
+        "name": "Death Note",
+		"diy": "true",
+        "type": "obsTemplate",
+        "config": {
+            "templateName": "Death Note"
+        }
+    },
+	"discharge_note" : {
+        "name": "Discharge note",
+		"diy": "true",
+        "type": "obsTemplate",
+        "config": {
+            "templateName": "Discharge Note"
+		}
+    },
+	"visitReport":{
+		"name": "Visit Details",
+		"diy":"true",
+		"type": "visits",
+		"config": {
+			"forDataAnalysis": false,
+			"patientAttributes": ["education"],
+			"visitAttributes": ["Visit Status", "Admission Status"],
+			"patientAddresses": ["address3", "city_village"],
+			"applyDateRangeFor": "visitStopDate",
+			"visitTypesToFilter": [],
+			"excludeColumns": ["Patient Name","Birthdate","Patient Created Date","Date Started","Date Stopped", "Date Of Admission","Date Of Discharge"],
+			"additionalPatientIdentifiers": [],
+			"ageGroupName":"reporting_age_group"
+		}
+	},
+	"formsReport":{
+		"name": "Forms report",
+		"diy":"true",
+		"type": "forms",
+		 "config": {
+			"patientAttributes": ["education"],
+			"patientAddresses": ["address3","city_village"],
+			"visitAttributes": ["Visit Status","Admission Status"],
+			"showVisitInfo": true,
+			"showProvider": true,
+			"formNamesToFilter": ["Vitals"],
+			"conceptNameDisplayFormat": "shortNamePreferred",
+			"locationTagsToFilter": [],
+			"programsToFilter": [],
+			"applyDateRangeFor": "obsDate",
+			"visitTypesToFilter": [],
+			"excludeColumns": ["Patient Name","Birthdate","Patient Created Date","Date Started","Date Stopped", "Date Of Admission","Date Of Discharge"]
+		}
+	},
+	"LabReport":{
+		"name": "Lab Orders",
+		"diy": "true",
+		"type": "labOrders",
+		"config": {
+			"patientAttributes": ["education"],
+			"patientAddresses": ["address3", "city_village"],
+			"visitAttributes": ["Visit Status", "Admission Status"],
+			"showVisitInfo": true,
+			"showProvider": true,
+			"programsToFilter": [],
+			"conceptNamesToFilter": [],
+			"conceptValuesToFilter": [],
+			"forDataAnalysis": true,
+			"excludeColumns": ["Patient Name"],
+			"showOrderDateTime": true,
+			"additionalPatientIdentifiers": [],
+			"ageGroupName":"Age group name",
+			"showReferredOutTests": false
+		}
+	},
+	"Radiology":{
+		"name": "Radiology Report",
+		"diy":"true",
+		"type": "observations",
+		"config": {
+			"patientAttributes": ["caste", "class", "education", "occupation", "primaryContact"],
+			"patientAddresses": ["address3", "city_village"],
+			"visitAttributes": ["Visit Status", "Admission Status"],
+			"showVisitInfo": true,
+			"showProvider": true,
+			"programsToFilter": [],
+			"conceptNamesToFilter": [],
+			"conceptValuesToFilter":[],
+			"conceptClassesToFilter": ["Radiology"],
+			"locationTagsToFilter": ["Login Location"],
+			"applyDateRangeFor": "obsDate",
+			"encounterPerRow": false,
+			"forDataAnalysis": true,
+			"visitTypesToFilter": ["PHARMACY VISIT", "OPD"],
+			"excludeColumns": ["Patient Name"],
+			"additionalPatientIdentifiers": ["National Id"],
+			"ignoreEmptyValues": false,
+			"conceptNameDisplayFormat": "shortNamePreferred",
+			"ageGroupName":"Age group name"
+		}
+	}
+}
