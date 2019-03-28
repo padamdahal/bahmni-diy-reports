@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>EHR DIY Report</title>
+        <title>Bahmni DIY Report</title>
 		<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
         <!-- external libs from cdnjs -->
         <script type="text/javascript" src="jquery/jquery_1.11.2.min.js"></script>
@@ -13,7 +13,7 @@
 
         <!-- PivotTable.js libs -->
         <link rel="stylesheet" type="text/css" href="pivottablejs/pivot.css">
-        <script type="text/javascript" src="pivottablejs/pivot.js"></script>
+		<script type="text/javascript" src="pivottablejs/pivot.js"></script>
 		<script type="text/javascript" src="pivottablejs/plotly_renderers.js"></script>
 		<script type="text/javascript" src="pivottablejs/gchart_renderers.js"></script>
 		
@@ -77,11 +77,12 @@
 				<button id="submit" class="button-link">Submit</button>
 			</div>
 			<script type="text/javascript">
+				// Load google visualization plugin
 				google.load("visualization", "1", {packages:["corechart", "charteditor"]});
 				
 				$(function(){
-					
-					// Check if user logged in to bahmni system
+
+					// Check if user logged in to the required system (bahmni in this case)
 					(function(){
 						var allcookies = document.cookie;
 						cookiearray = allcookies.split(';');
@@ -102,7 +103,7 @@
 						url: "/bahmni_config/openmrs/apps/reports/reports.json",
 						success: function(reports){
 							var select = $("#reports");
-							select.append('<option value="">Select Obs Template</option>');
+							select.append('<option value = "">Select Report</option>');
 							$.each(reports, function( key, value ) {
 								if(value.diy === 'true'){
 									select.append('<option value="' + value.name + '">' + value.name + '</option>');
@@ -119,12 +120,15 @@
 						showAnim: "fadeIn",
 						dateFormat: 'yyyy-mm-dd',
 						
-						onSelect: function(dates) {}
+						onSelect: function(dates) {
+							// do nothing or convert the dates here
+						}
 					});
 					
 					// Request for data and render the pivot UI
 					$("#submit").click(function(e){
-						e.preventDefault();
+						//e.preventDefault();
+						
 						// Display loading gif until UI loads
 						$("#output").empty();
 						$("#output").append('<div class="loading" style="text-align:center"><img src="loading.gif"/></div>');
@@ -133,11 +137,12 @@
 						var errors = [];
 						var reportName = $("#reports").children("option:selected").val();
 						
-						if(reportName == null || reportName == '' || reportName === 'Select Obs Template'){
-							errors.push('Report name missing. ');
+						if(reportName == null || reportName == '' || reportName === 'Select Report'){
+							//errors.push('Report name missing. ');
 						}
 						
 						var startDate = $("#startDate").val();
+						// try to convert the nepali date into english date (startDate) 
 						try {
 							var converter = new DateConverter();
 							converter.setNepaliDate(startDate.substring(0,4), startDate.substring(5,7), startDate.substring(8,10));
@@ -151,6 +156,8 @@
 						}
 						
 						var endDate = $("#endDate").val();
+						
+						// try to convert the nepali date into english date (endDate) 
 						try {
 							var converter = new DateConverter();
 							converter.setNepaliDate(endDate.substring(0,4), endDate.substring(5,7), endDate.substring(8,10));
@@ -164,23 +171,28 @@
 						}
 						
 						if (errors === undefined || errors.length == 0) {
+							
+							// Prepare the data (csv) url
 							var reportUrl = location.protocol+"//"+location.host+"/bahmnireports/report?name=";
 							reportUrl += reportName;
 							reportUrl += "&startDate="+ startDate;
 							reportUrl += "&endDate="+ endDate;
 							reportUrl += "&responseType=text/csv&paperSize=null&appName=reports";
 							
-							// Get the configuration
+							// Get the configuration from config.js
 							var pivotConfig = new Object;
-							pivotConfig = (config.hasOwnProperty(reportName))?config[reportName]:null;
+							pivotConfig = (config.hasOwnProperty(reportName)) ? config[reportName] : null;
 							
 							// Fetch and load the content in the pivotUI
 							Papa.parse(reportUrl, {
 								download: true,
 								skipEmptyLines: true,
-								fastMode: false,
+								fastMode: false, // setting this option to true may result in error
 								complete: function(parsed){
-									// Remove 3 rows starting at first row (0) as header row is at 4th row
+									// Remove top rows
+									/* Only applicable if header is not on first row of the csv file
+									   In this case header is at 4th row
+									*/
 									parsed.data.splice(0,3);
 									
 									var derivers = $.pivotUtilities.derivers;

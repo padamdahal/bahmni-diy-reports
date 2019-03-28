@@ -1,3 +1,4 @@
+// Configuration for reports
 /* Available config options
 var config = {
 	"_analysis Delivery Details":{
