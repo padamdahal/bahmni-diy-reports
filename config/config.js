@@ -1,4 +1,3 @@
-// Configuration for reports
 /* Available config options
 var config = {
 	"_analysis Delivery Details":{
@@ -6,7 +5,7 @@ var config = {
 		hiddenAttributes: [],
 		hiddenFromAggregators: [],
 		hiddenFromDragDrop:[],
-		menuLimit: 500,
+		menuLimit: 5000,
 		cols: [],
 		rows: [],
 		vals: [],
@@ -28,6 +27,7 @@ var config = {
 var config = {
 	"Delivery Note": {
 		"hiddenFromDragDrop":["User", "Systolic pressure", "Diastolic"],
+		"menuLimit": 5000
 	},
 	"Death Note": {
 		"hiddenFromDragDrop":["User", "Systolic pressure", "Diastolic"],
@@ -37,5 +37,20 @@ var config = {
 	"Procedure Notes": {
 		"cols": ["Gender"],
 		"rows": ["Diagnosis"]
+	},
+	"Department Report": {
+		"cols": ["Visit Type"],
+		"rows": ["Value"]
+	},
+	"Delivery Obs Report": {
+		"cols": ["Concept Name","Value"],
+		"rows": [],
+		"rendererOptions":{
+			"table":{
+				"colTotals": false,
+				"rowTotals": false
+			}
+		}
 	}
+	
 }
